@@ -66,7 +66,6 @@ func (s *Server) GetUserOrders(ctx context.Context, req *GetUserOrdersRequest) (
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get user orders: %v", err)
 	}
-	defer cursor.Close(ctx)
 
 	var orders []*Order
 	for cursor.Next(ctx) {
