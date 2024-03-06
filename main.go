@@ -4,6 +4,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/xWalian/EcommerceProject/microservices/auth"
+	"github.com/xWalian/EcommerceProject/microservices/orders"
+	"github.com/xWalian/EcommerceProject/microservices/users"
 	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
@@ -17,7 +20,7 @@ import (
 )
 
 func main() {
-	// Inicjalizacja połączenia z bazą danych MongoDB
+	// Initializing connection with MongoDB
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
@@ -30,7 +33,7 @@ func main() {
 		}
 	}()
 
-	// Sprawdzenie połączenia
+	// Checking connection with MongoDB
 	err = client.Ping(ctx, nil)
 	if err != nil {
 		log.Fatalf("failed to ping MongoDB: %v", err)
@@ -41,9 +44,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
+	// Making main server and services instances
 	s := grpc.NewServer()
 	productsService := products.NewServer(client)
+	usersService := users.NewServer(client)
+	ordersService := orders.NewServer(client)
+	authService := auth.NewServer(client)
 	products.RegisterProductsServiceServer(s, productsService)
+	users.RegisterUsersServiceServer(s, usersService)
+	orders.RegisterOrdersServiceServer(s, ordersService)
+	auth.RegisterAuthServiceServer(s, authService)
 	reflection.Register(s)
 	log.Printf("Server started listening on %s", lis.Addr().String())
 	if err := s.Serve(lis); err != nil {

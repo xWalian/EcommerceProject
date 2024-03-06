@@ -2,6 +2,7 @@ package orders
 
 import (
 	"context"
+	"errors"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -13,8 +14,27 @@ type Server struct {
 	db *mongo.Client
 }
 
+func (s *Server) mustEmbedUnimplementedOrdersServiceServer() {
+
+}
 func (s *Server) CreateOrder(ctx context.Context, req *CreateOrderRequest) (*Order, error) {
 	collection := s.db.Database("db_ecommerce_mongo").Collection("orders")
+	for _, productID := range req.GetProductIds() {
+		exists, err := s.productExists(ctx, productID)
+		if err != nil {
+			return nil, err
+		}
+		if !exists {
+			return nil, errors.New("product with ID " + productID + " does not exist")
+		}
+	}
+	exists, err := s.userExist(ctx, req.UserId)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, errors.New("product with ID " + req.UserId + " does not exist")
+	}
 	orderID := uuid.New().String()
 	order := &Order{
 		Id:         orderID,
@@ -22,7 +42,7 @@ func (s *Server) CreateOrder(ctx context.Context, req *CreateOrderRequest) (*Ord
 		ProductsId: req.GetProductIds(),
 		Status:     "created",
 	}
-	_, err := collection.InsertOne(ctx, order)
+	_, err = collection.InsertOne(ctx, order)
 	if err != nil {
 		return nil, err
 	}
@@ -62,6 +82,32 @@ func (s *Server) GetUserOrders(ctx context.Context, req *GetUserOrdersRequest) (
 	}
 
 	return &GetUserOrdersResponse{Orders: orders}, nil
+}
+
+func (s *Server) productExists(ctx context.Context, productID string) (bool, error) {
+	collection := s.db.Database("db_ecommerce_mongo").Collection("products")
+	var product bson.M
+	err := collection.FindOne(ctx, bson.M{"id": productID}).Decode(&product)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func (s *Server) userExist(ctx context.Context, userId string) (bool, error) {
+	collection := s.db.Database("db_ecommerce_mongo").Collection("products")
+	var product bson.M
+	err := collection.FindOne(ctx, bson.M{"id": userId}).Decode(&product)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 func NewServer(db *mongo.Client) *Server {
