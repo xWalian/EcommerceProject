@@ -42,7 +42,7 @@ func TestGetOrder(t *testing.T) {
 	server := orders.NewServer(db)
 
 	// Wstaw przykładowe dane do bazy danych.
-	_, err = db.Database("db_ecommerce_mongo").Collection("orders").InsertOne(context.Background(), bson.M{
+	_, err = db.Database("test_database").Collection("orders").InsertOne(context.Background(), bson.M{
 		"id":     "order123",
 		"userId": "user123",
 		"productsId": []string{
@@ -69,7 +69,7 @@ func TestGetUserOrders(t *testing.T) {
 	server := orders.NewServer(db)
 
 	// Wstaw przykładowe dane do bazy danych.
-	_, err = db.Database("db_ecommerce_mongo").Collection("orders").InsertOne(context.Background(), bson.M{
+	_, err = db.Database("test_database").Collection("orders").InsertOne(context.Background(), bson.M{
 		"id":     "order123",
 		"userId": "user123",
 		"productsId": []string{

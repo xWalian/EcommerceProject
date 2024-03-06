@@ -1,25 +1,52 @@
+// main.go
 package main
 
 import (
+	"context"
 	"fmt"
-	"io/ioutil"
+	"google.golang.org/grpc/reflection"
 	"log"
-	"net/http"
+	"net"
+	"time"
+
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"google.golang.org/grpc"
+
+	"github.com/xWalian/EcommerceProject/microservices/products"
 )
 
 func main() {
-	http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
-		log.Println("Hello World")
-		d, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			http.Error(rw, "Oops", http.StatusBadRequest)
-			return
+	// Inicjalizacja połączenia z bazą danych MongoDB
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	if err != nil {
+		log.Fatalf("failed to connect to MongoDB: %v", err)
+	}
+	defer func() {
+		if err = client.Disconnect(ctx); err != nil {
+			log.Fatalf("failed to disconnect from MongoDB: %v", err)
 		}
-		fmt.Fprintf(rw, "Hello %s", d)
+	}()
 
-	})
-	http.HandleFunc("/users", func(http.ResponseWriter, *http.Request) {
-		log.Println("Hello Earth")
-	})
-	http.ListenAndServe(":8080", nil)
+	// Sprawdzenie połączenia
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		log.Fatalf("failed to ping MongoDB: %v", err)
+	}
+	fmt.Println("Connected to MongoDB!")
+
+	lis, err := net.Listen("tcp", ":50051")
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	s := grpc.NewServer()
+	productsService := products.NewServer(client)
+	products.RegisterProductsServiceServer(s, productsService)
+	reflection.Register(s)
+	log.Printf("Server started listening on %s", lis.Addr().String())
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
 }
