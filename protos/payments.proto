@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package payments;
+
+option go_package = "./payments";
+
+service PaymentsService {
+  rpc ProcessPayment(ProcessPaymentRequest) returns (PaymentResponse);
+}
+
+message ProcessPaymentRequest {
+  int64 orderId = 1;
+  string paymentMethod = 2;
+}
+
+message PaymentResponse {
+  bool success = 1;
+}

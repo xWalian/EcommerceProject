@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+option go_package = "/orders";
+
+package orders;
+
+service OrdersService {
+  rpc CreateOrder(CreateOrderRequest) returns (Order);
+  rpc GetOrder(GetOrderRequest) returns (Order);
+  rpc GetUserOrders(GetUserOrdersRequest) returns (GetUserOrdersResponse);
+}
+
+message Order {
+  string id = 1;
+  string userId = 2;
+  repeated string products_id = 3;
+  string status = 4;
+}
+
+message CreateOrderRequest {
+  string userId = 1;
+  repeated string productIds = 2;
+}
+
+message GetOrderRequest {
+  string id = 1;
+}
+
+message GetUserOrdersRequest {
+  string userId = 1;
+}
+
+message GetUserOrdersResponse {
+  repeated Order orders = 1;
+}

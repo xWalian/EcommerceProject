@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package newsletter;
+
+service NewsletterService {
+  rpc Subscribe(SubscribeRequest) returns (SubscribeResponse);
+  rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse);
+}
+
+message SubscribeRequest {
+  string email = 1;
+}
+
+message SubscribeResponse {
+  bool success = 1;
+}
+
+message UnsubscribeRequest {
+  string email = 1;
+}
+
+message UnsubscribeResponse {
+  bool success = 1;
+}

@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package users;
+
+option go_package = "./users";
+
+service UsersService {
+  rpc GetUser(GetUserRequest) returns (User);
+  rpc UpdateUser(UpdateUserRequest) returns (User);
+}
+
+message User {
+  string id = 1;
+  string username = 2;
+  string password = 3;
+  string email = 4;
+  string address = 5;
+  string phone = 6;
+  string role = 7;
+}
+
+message GetUserRequest {
+  string id = 1;
+}
+
+message UpdateUserRequest {
+  string id = 1;
+  string address = 2;
+  string phone = 3;
+}
