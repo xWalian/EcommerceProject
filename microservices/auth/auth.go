@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/xWalian/EcommerceProject/microservices/logs"
 	"github.com/xWalian/EcommerceProject/microservices/users"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -22,12 +23,19 @@ const (
 )
 
 type Server struct {
-	db *mongo.Client
+	db   *mongo.Client
+	logs *logs.Server
 }
 
 func (s *Server) VerifyToken(ctx context.Context, request *VerifyTokenRequest) (*VerifyTokenResponse, error) {
 	claims, err := ValidateToken(ctx, request.Token)
 	if err != nil {
+		s.logs.CreateLog(ctx, &logs.CreateLogRequest{
+			Service:   "authservice",
+			Level:     "ERROR",
+			Message:   err.Error(),
+			Timestamp: time.Now().Format("2006-01-02 15:04:05"),
+		})
 		return nil, err
 	}
 	userID := claims["id"].(string)
@@ -35,9 +43,22 @@ func (s *Server) VerifyToken(ctx context.Context, request *VerifyTokenRequest) (
 	var user bson.M
 	err = collection.FindOne(ctx, bson.M{"id": userID}).Decode(&user)
 	if err != nil {
+
 		if err == mongo.ErrNoDocuments {
+			s.logs.CreateLog(ctx, &logs.CreateLogRequest{
+				Service:   "authservice",
+				Level:     "WARNING",
+				Message:   userID + " User not found",
+				Timestamp: time.Now().Format("2006-01-02 15:04:05"),
+			})
 			return nil, status.Errorf(codes.NotFound, "User not found")
 		}
+		s.logs.CreateLog(ctx, &logs.CreateLogRequest{
+			Service:   "authservice",
+			Level:     "ERROR",
+			Message:   err.Error(),
+			Timestamp: time.Now().Format("2006-01-02 15:04:05"),
+		})
 		return nil, err
 	}
 
@@ -53,7 +74,13 @@ func (s *Server) Register(ctx context.Context, req *RegisterRequest) (*RegisterR
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.GetPassword()), bcrypt.DefaultCost)
 
 	if err != nil {
-		log.Fatalf("failed to hash password: %v", err)
+		s.logs.CreateLog(ctx, &logs.CreateLogRequest{
+			Service:   "authservice",
+			Level:     "ERROR",
+			Message:   err.Error() + " Failed to hash password",
+			Timestamp: time.Now().Format("2006-01-02 15:04:05"),
+		})
+		log.Fatalf("Failed to hash password: %v", err)
 	}
 	user := &users.User{
 		Id:       userId,
@@ -66,10 +93,21 @@ func (s *Server) Register(ctx context.Context, req *RegisterRequest) (*RegisterR
 	}
 	_, err = collection.InsertOne(ctx, user)
 	if err != nil {
+		s.logs.CreateLog(ctx, &logs.CreateLogRequest{
+			Service:   "authservice",
+			Level:     "ERROR",
+			Message:   err.Error(),
+			Timestamp: time.Now().Format("2006-01-02 15:04:05"),
+		})
 		return nil, err
 	}
 	token, refreshtoken, _ := GenerateToken(user.Id, user.Role, user.Username)
-
+	s.logs.CreateLog(ctx, &logs.CreateLogRequest{
+		Service:   "authservice",
+		Level:     "INFO",
+		Message:   userId + "User added successfully",
+		Timestamp: time.Now().Format("2006-01-02 15:04:05"),
+	})
 	return &RegisterResponse{Token: token, Refreshtoken: refreshtoken}, nil
 
 }
@@ -80,18 +118,42 @@ func (s *Server) Login(ctx context.Context, req *LoginRequest) (*LoginResponse, 
 	err := collection.FindOne(ctx, bson.M{"username": req.GetUsername()}).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
+			s.logs.CreateLog(ctx, &logs.CreateLogRequest{
+				Service:   "authservice",
+				Level:     "WARNING",
+				Message:   req.GetUsername() + "Invalid username or password",
+				Timestamp: time.Now().Format("2006-01-02 15:04:05"),
+			})
 			return nil, errors.New("invalid username or password")
 		}
+		s.logs.CreateLog(ctx, &logs.CreateLogRequest{
+			Service:   "authservice",
+			Level:     "ERROR",
+			Message:   err.Error(),
+			Timestamp: time.Now().Format("2006-01-02 15:04:05"),
+		})
 		return nil, err
 	}
 
 	hashedPassword := user["password"].(string)
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(req.GetPassword()))
 	if err != nil {
+		s.logs.CreateLog(ctx, &logs.CreateLogRequest{
+			Service:   "authservice",
+			Level:     "WARNING",
+			Message:   req.GetUsername() + "Invalid username or password",
+			Timestamp: time.Now().Format("2006-01-02 15:04:05"),
+		})
 		return nil, errors.New("invalid username or password")
 	}
 
 	token, refreshtoken, _ := GenerateToken(user["id"].(string), user["role"].(string), user["password"].(string))
+	s.logs.CreateLog(ctx, &logs.CreateLogRequest{
+		Service:   "authservice",
+		Level:     "INFO",
+		Message:   user["id"].(string) + "User logged successfully",
+		Timestamp: time.Now().Format("2006-01-02 15:04:05"),
+	})
 	return &LoginResponse{Token: token, Refreshtoken: refreshtoken}, nil
 }
 
@@ -105,6 +167,7 @@ func GenerateToken(userid string, userrole string, username string) (string, str
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessTokenClaims)
 	accessTokenString, err := accessToken.SignedString([]byte(secretKey))
 	if err != nil {
+
 		return "", "", err
 	}
 
@@ -159,6 +222,6 @@ func (s *Server) RefreshToken(ctx context.Context, request *RefreshTokenRequest)
 	return &RefreshTokenResponse{Token: accessToken}, nil
 }
 
-func NewServer(db *mongo.Client) *Server {
-	return &Server{db: db}
+func NewServer(db *mongo.Client, logs *logs.Server) *Server {
+	return &Server{db: db, logs: logs}
 }

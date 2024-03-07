@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 type LoggingServiceClient interface {
 	GetLogs(ctx context.Context, in *GetLogsRequest, opts ...grpc.CallOption) (*GetLogsResponse, error)
 	CreateLog(ctx context.Context, in *CreateLogRequest, opts ...grpc.CallOption) (*Log, error)
+	DeleteLog(ctx context.Context, in *DeleteLogRequest, opts ...grpc.CallOption) (*DeleteLogResponse, error)
 }
 
 type loggingServiceClient struct {
@@ -52,12 +53,22 @@ func (c *loggingServiceClient) CreateLog(ctx context.Context, in *CreateLogReque
 	return out, nil
 }
 
+func (c *loggingServiceClient) DeleteLog(ctx context.Context, in *DeleteLogRequest, opts ...grpc.CallOption) (*DeleteLogResponse, error) {
+	out := new(DeleteLogResponse)
+	err := c.cc.Invoke(ctx, "/logging.LoggingService/DeleteLog", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LoggingServiceServer is the server API for LoggingService service.
 // All implementations must embed UnimplementedLoggingServiceServer
 // for forward compatibility
 type LoggingServiceServer interface {
 	GetLogs(context.Context, *GetLogsRequest) (*GetLogsResponse, error)
 	CreateLog(context.Context, *CreateLogRequest) (*Log, error)
+	DeleteLog(context.Context, *DeleteLogRequest) (*DeleteLogResponse, error)
 	mustEmbedUnimplementedLoggingServiceServer()
 }
 
@@ -70,6 +81,9 @@ func (UnimplementedLoggingServiceServer) GetLogs(context.Context, *GetLogsReques
 }
 func (UnimplementedLoggingServiceServer) CreateLog(context.Context, *CreateLogRequest) (*Log, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateLog not implemented")
+}
+func (UnimplementedLoggingServiceServer) DeleteLog(context.Context, *DeleteLogRequest) (*DeleteLogResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteLog not implemented")
 }
 func (UnimplementedLoggingServiceServer) mustEmbedUnimplementedLoggingServiceServer() {}
 
@@ -120,6 +134,24 @@ func _LoggingService_CreateLog_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LoggingService_DeleteLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteLogRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LoggingServiceServer).DeleteLog(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/logging.LoggingService/DeleteLog",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LoggingServiceServer).DeleteLog(ctx, req.(*DeleteLogRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LoggingService_ServiceDesc is the grpc.ServiceDesc for LoggingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -134,6 +166,10 @@ var LoggingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateLog",
 			Handler:    _LoggingService_CreateLog_Handler,
+		},
+		{
+			MethodName: "DeleteLog",
+			Handler:    _LoggingService_DeleteLog_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

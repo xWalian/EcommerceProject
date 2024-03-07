@@ -1,15 +1,94 @@
 package logs
 
-import "go.mongodb.org/mongo-driver/mongo"
+import (
+	"context"
+	"database/sql"
+	"fmt"
+)
 
 type Server struct {
-	db *mongo.Client
+	db *sql.DB
 }
 
-func (s *Server) GetLogsRequest() {
+func (s *Server) mustEmbedUnimplementedLoggingServiceServer() {
 
 }
 
-func NewServer(db *mongo.Client) *Server {
+func (s *Server) GetLogs(ctx context.Context, req *GetLogsRequest) (*GetLogsResponse, error) {
+
+	query := "SELECT id, service, level, message, timestamp FROM logs WHERE 1=1"
+	args := make([]interface{}, 0)
+
+	if req.Service != "" {
+		query += " AND service = $1"
+		args = append(args, req.Service)
+	}
+	if req.Level != "" {
+		query += " AND level = $2"
+		args = append(args, req.Level)
+	}
+
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %v", err)
+	}
+	defer rows.Close()
+
+	var logs []*Log
+	for rows.Next() {
+		var log Log
+		err := rows.Scan(&log.Id, &log.Service, &log.Level, &log.Message, &log.Timestamp)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan row: %v", err)
+		}
+		logs = append(logs, &log)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over rows: %v", err)
+	}
+
+	return &GetLogsResponse{Logs: logs}, nil
+}
+
+func (s *Server) CreateLog(ctx context.Context, request *CreateLogRequest) (*Log, error) {
+
+	query := "INSERT INTO logs (service, level, message, timestamp) VALUES ($1, $2, $3, $4) RETURNING id"
+	var id int
+
+	err := s.db.QueryRowContext(ctx, query, request.Service, request.Level, request.Message, request.Timestamp).Scan(&id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to insert log: %v", err)
+	}
+
+	return &Log{
+		Id:        string(rune(id)),
+		Service:   request.Service,
+		Level:     request.Level,
+		Message:   request.Message,
+		Timestamp: request.Timestamp,
+	}, nil
+}
+
+func (s *Server) DeleteLog(ctx context.Context, req *DeleteLogRequest) (*DeleteLogResponse, error) {
+	query := "DELETE FROM logs WHERE id = $1"
+
+	result, err := s.db.ExecContext(ctx, query, req.Id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute DELETE query: %v", err)
+	}
+
+	numRows, err := result.RowsAffected()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get rows affected: %v", err)
+	}
+
+	if numRows != 1 {
+		return nil, fmt.Errorf("expected to delete 1 row, but deleted %d rows", numRows)
+	}
+
+	return &DeleteLogResponse{Success: true}, nil
+}
+
+func NewServer(db *sql.DB) *Server {
 	return &Server{db: db}
 }

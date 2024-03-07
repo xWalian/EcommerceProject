@@ -7,6 +7,7 @@ option go_package = "./logs";
 service LoggingService {
   rpc GetLogs(GetLogsRequest) returns (GetLogsResponse);
   rpc CreateLog(CreateLogRequest) returns (Log);
+  rpc DeleteLog(DeleteLogRequest) returns (DeleteLogResponse);
 }
 
 message Log {
@@ -31,4 +32,12 @@ message CreateLogRequest{
   string level = 2;
   string message = 3;
   string timestamp = 4;
+}
+
+message DeleteLogRequest{
+  string id = 1;
+}
+
+message DeleteLogResponse{
+  bool Success = 1;
 }
