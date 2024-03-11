@@ -1,0 +1,47 @@
+version: '3'
+
+services:
+  auth:
+    image: auth:latest
+    ports:
+      - "50052:50052"
+    networks:
+      - microservices
+
+  users:
+    image: users:latest
+    ports:
+      - "50053:50053"
+    networks:
+      - microservices
+
+  logs:
+    image: logs:latest
+    ports:
+      - "50054:50054"
+    networks:
+      - microservices
+
+  products:
+    image: products:latest
+    ports:
+      - "50055:50055"
+    networks:
+      - microservices
+
+  orders:
+    image: orders:latest
+    ports:
+      - "50056:50056"
+    networks:
+      - microservices
+
+  payments:
+    image: payments:latest
+    ports:
+      - "50057:50057"
+    networks:
+      - microservices
+
+networks:
+  microservices:

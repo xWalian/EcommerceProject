@@ -55,7 +55,9 @@ func (s *Server) CreateLog(ctx context.Context, request *CreateLogRequest) (*Log
 	query := "INSERT INTO logs (service, level, message, timestamp) VALUES ($1, $2, $3, $4) RETURNING id"
 	var id int
 
-	err := s.db.QueryRowContext(ctx, query, request.Service, request.Level, request.Message, request.Timestamp).Scan(&id)
+	err := s.db.QueryRowContext(
+		ctx, query, request.Service, request.Level, request.Message, request.Timestamp,
+	).Scan(&id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert log: %v", err)
 	}

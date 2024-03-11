@@ -7,10 +7,12 @@ option go_package = "./users";
 service UsersService {
   rpc GetUser(GetUserRequest) returns (User);
   rpc UpdateUser(UpdateUserRequest) returns (User);
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Register(RegisterRequest) returns (RegisterResponse);
 }
 
 message User {
-  string id = 1;
+  int64 id = 1;
   string username = 2;
   string password = 3;
   string email = 4;
@@ -20,11 +22,31 @@ message User {
 }
 
 message GetUserRequest {
-  string id = 1;
+  int64 id = 1;
 }
 
 message UpdateUserRequest {
-  string id = 1;
+  int64 id = 1;
   string address = 2;
   string phone = 3;
+}
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string token = 1;
+  string refreshtoken = 2;
+}
+
+message RegisterRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+}
+
+message RegisterResponse {
+  string token = 1;
+  string refreshtoken = 2;
 }

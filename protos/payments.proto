@@ -9,7 +9,7 @@ service PaymentsService {
 }
 
 message ProcessPaymentRequest {
-  int64 orderId = 1;
+  string orderId = 1;
   string paymentMethod = 2;
 }
 

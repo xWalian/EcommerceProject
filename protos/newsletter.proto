@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package newsletter;
+package src.main.kotlin;
 
 service NewsletterService {
   rpc Subscribe(SubscribeRequest) returns (SubscribeResponse);
