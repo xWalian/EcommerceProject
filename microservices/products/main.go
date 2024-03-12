@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	_ "github.com/lib/pq"
-	main2 "github.com/xWalian/EcommerceProject/microservices/logs/server"
+	main2 "github.com/xWalian/EcommerceProject/microservices/logging/pb"
 	pb "github.com/xWalian/EcommerceProject/microservices/products/pb"
 	products "github.com/xWalian/EcommerceProject/microservices/products/server"
 	"go.mongodb.org/mongo-driver/mongo"

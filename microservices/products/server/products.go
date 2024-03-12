@@ -2,8 +2,7 @@ package products
 
 import (
 	"context"
-	"github.com/google/uuid"
-	logs "github.com/xWalian/EcommerceProject/microservices/logs/server"
+	logs "github.com/xWalian/EcommerceProject/microservices/logging/pb"
 	pb "github.com/xWalian/EcommerceProject/microservices/products/pb"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -81,9 +80,9 @@ func (s *Server) GetProducts(ctx context.Context, req *pb.GetProductsRequest) (
 }
 
 func (s *Server) GetProduct(ctx context.Context, req *pb.GetProductRequest) (*pb.Product, error) {
-	collection := s.db.Database("db_ecommerce_mongo").Collection("products")
+	collection := s.db.Database("db_products").Collection("products")
 	var product pb.Product
-	err := collection.FindOne(ctx, bson.M{"id": req.Id}).Decode(&product)
+	err := collection.FindOne(ctx, bson.M{"_id": req.Id}).Decode(&product)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			s.logs.CreateLog(
@@ -118,10 +117,8 @@ func (s *Server) GetProduct(ctx context.Context, req *pb.GetProductRequest) (*pb
 }
 
 func (s *Server) AddProduct(ctx context.Context, req *pb.AddProductRequest) (*pb.Product, error) {
-	collection := s.db.Database("db_ecommerce_mongo").Collection("products")
-	productID := uuid.New().String
+	collection := s.db.Database("db_products").Collection("products")
 	product := &pb.Product{
-		Id:            productID(),
 		Name:          req.GetName(),
 		Description:   req.GetDescription(),
 		Price:         req.GetPrice(),
@@ -143,7 +140,7 @@ func (s *Server) AddProduct(ctx context.Context, req *pb.AddProductRequest) (*pb
 		ctx, &logs.CreateLogRequest{
 			Service:   "productsservice",
 			Level:     "INFO",
-			Message:   productID() + "Product added successfully",
+			Message:   "Product added successfully",
 			Timestamp: time.Now().Format("2006-01-02 15:04:05"),
 		},
 	)
@@ -154,8 +151,8 @@ func (s *Server) AddProduct(ctx context.Context, req *pb.AddProductRequest) (*pb
 }
 
 func (s *Server) UpdateProduct(ctx context.Context, req *pb.UpdateProductRequest) (*pb.Product, error) {
-	collection := s.db.Database("db_ecommerce_mongo").Collection("products")
-	filter := bson.M{"id": req.GetId()}
+	collection := s.db.Database("db_products").Collection("products")
+	filter := bson.M{"_id": req.GetId()}
 	update := bson.M{
 		"$set": bson.M{
 			"name":           req.GetName(),
@@ -180,7 +177,7 @@ func (s *Server) UpdateProduct(ctx context.Context, req *pb.UpdateProductRequest
 		ctx, &logs.CreateLogRequest{
 			Service:   "productsservice",
 			Level:     "INFO",
-			Message:   req.GetId() + "Product added successfully",
+			Message:   req.GetId() + "Product Updated successfully",
 			Timestamp: time.Now().Format("2006-01-02 15:04:05"),
 		},
 	)
@@ -190,8 +187,8 @@ func (s *Server) UpdateProduct(ctx context.Context, req *pb.UpdateProductRequest
 func (s *Server) DeleteProduct(
 	ctx context.Context, req *pb.DeleteProductRequest,
 ) (*pb.DeleteProductResponse, error) {
-	collection := s.db.Database("db_ecommerce_mongo").Collection("products")
-	filter := bson.M{"id": req.GetId()}
+	collection := s.db.Database("db_products").Collection("products")
+	filter := bson.M{"_id": req.GetId()}
 	result, err := collection.DeleteOne(ctx, filter)
 	if err != nil {
 		return nil, err

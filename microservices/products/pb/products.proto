@@ -13,7 +13,6 @@ service ProductsService {
 }
 
 message Product {
-  string id = 1;
   string name = 2;
   string description = 3;
   float price = 4;
@@ -34,6 +33,7 @@ message AddProductRequest {
   string description = 2;
   float price = 3;
   int64 stock_quantity = 4;
+  string id = 5;
 }
 
 message UpdateProductRequest {

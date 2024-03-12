@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	auth "github.com/xWalian/EcommerceProject/microservices/auth/pb"
-	logs "github.com/xWalian/EcommerceProject/microservices/logs/server"
+	logs "github.com/xWalian/EcommerceProject/microservices/logging/pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"time"

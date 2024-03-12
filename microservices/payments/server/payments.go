@@ -2,10 +2,10 @@ package payments
 
 import (
 	"context"
-	logs "github.com/xWalian/EcommerceProject/microservices/logs/server"
-	orders "github.com/xWalian/EcommerceProject/microservices/orders/server"
+	logs "github.com/xWalian/EcommerceProject/microservices/logging/pb"
+	orders "github.com/xWalian/EcommerceProject/microservices/orders/pb"
 	pb "github.com/xWalian/EcommerceProject/microservices/payments/pb"
-	products "github.com/xWalian/EcommerceProject/microservices/products/server"
+	products "github.com/xWalian/EcommerceProject/microservices/products/pb"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"

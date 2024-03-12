@@ -5,7 +5,7 @@ go 1.21.1
 require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/lib/pq v1.10.9
-	github.com/xWalian/EcommerceProject/microservices/logs v0.0.0-20240311091236-fe814ea3b89d
+	github.com/xWalian/EcommerceProject/microservices/logging v0.0.0-20240312090536-cae9b7fe8bac
 	google.golang.org/grpc v1.62.1
 	google.golang.org/protobuf v1.33.0
 )

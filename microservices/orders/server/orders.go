@@ -2,11 +2,13 @@ package orders
 
 import (
 	"context"
+	"database/sql"
 	"errors"
-	"github.com/google/uuid"
-	logs "github.com/xWalian/EcommerceProject/microservices/logs/server"
+	_ "github.com/lib/pq"
+	logs "github.com/xWalian/EcommerceProject/microservices/logging/pb"
 	pb "github.com/xWalian/EcommerceProject/microservices/orders/pb"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -15,6 +17,7 @@ import (
 
 type Server struct {
 	pb.UnimplementedOrdersServiceServer
+	sql  *sql.DB
 	db   *mongo.Client
 	logs logs.LoggingServiceClient
 }
@@ -23,7 +26,7 @@ func (s *Server) mustEmbedUnimplementedOrdersServiceServer() {
 
 }
 func (s *Server) CreateOrder(ctx context.Context, req *pb.CreateOrderRequest) (*pb.Order, error) {
-	collection := s.db.Database("db_orders").Collection("pb")
+	collection := s.db.Database("db_orders").Collection("orders")
 	for _, productID := range req.GetProductIds() {
 		exists, err := s.productExists(ctx, productID)
 		if err != nil {
@@ -73,9 +76,7 @@ func (s *Server) CreateOrder(ctx context.Context, req *pb.CreateOrderRequest) (*
 		return nil, errors.New("user with ID " + req.UserId + " does not exist")
 	}
 
-	orderID := uuid.New().String()
 	order := &pb.Order{
-		Id:         orderID,
 		UserId:     req.GetUserId(),
 		ProductsId: req.GetProductIds(),
 		Status:     "created",
@@ -109,16 +110,16 @@ func (s *Server) CreateOrder(ctx context.Context, req *pb.CreateOrderRequest) (*
 		ctx, &logs.CreateLogRequest{
 			Service:   "ordersservice",
 			Level:     "INFO",
-			Message:   orderID + " Order successfully added",
+			Message:   " Order successfully added",
 			Timestamp: time.Now().Format("2006-01-02 15:04:05"),
 		},
 	)
 	return order, nil
 }
 func (s *Server) GetOrder(ctx context.Context, req *pb.GetOrderRequest) (*pb.Order, error) {
-	collection := s.db.Database("db_ecommerce_mongo").Collection("pb")
+	collection := s.db.Database("db_orders").Collection("orders")
 	var order pb.Order
-	err := collection.FindOne(ctx, bson.M{"id": req.Id}).Decode(&order)
+	err := collection.FindOne(ctx, bson.M{"_id": req.Id}).Decode(&order)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			s.logs.CreateLog(
@@ -154,10 +155,10 @@ func (s *Server) GetOrder(ctx context.Context, req *pb.GetOrderRequest) (*pb.Ord
 func (s *Server) GetUserOrders(ctx context.Context, req *pb.GetUserOrdersRequest) (
 	*pb.GetUserOrdersResponse, error,
 ) {
-	collection := s.db.Database("db_ecommerce_mongo").Collection("pb")
+	collection := s.db.Database("db_orders").Collection("pb")
 	cursor, err := collection.Find(ctx, bson.M{"userId": req.UserId})
 	if err != nil {
-		s.logs.CreateLog(
+		_, err = s.logs.CreateLog(
 			ctx, &logs.CreateLogRequest{
 				Service:   "ordersservice",
 				Level:     "WARNING",
@@ -165,13 +166,16 @@ func (s *Server) GetUserOrders(ctx context.Context, req *pb.GetUserOrdersRequest
 				Timestamp: time.Now().Format("2006-01-02 15:04:05"),
 			},
 		)
+		if err != nil {
+			return nil, err
+		}
 		return nil, status.Errorf(codes.Internal, "failed to get user pb: %v", err)
 	}
 	var orders []*pb.Order
 	for cursor.Next(ctx) {
 		var order pb.Order
 		if err := cursor.Decode(&order); err != nil {
-			s.logs.CreateLog(
+			_, err := s.logs.CreateLog(
 				ctx, &logs.CreateLogRequest{
 					Service:   "ordersservice",
 					Level:     "WARNING",
@@ -179,6 +183,9 @@ func (s *Server) GetUserOrders(ctx context.Context, req *pb.GetUserOrdersRequest
 					Timestamp: time.Now().Format("2006-01-02 15:04:05"),
 				},
 			)
+			if err != nil {
+				return nil, err
+			}
 			return nil, status.Errorf(codes.Internal, "failed to decode order: %v", err)
 		}
 		orders = append(orders, &order)
@@ -192,37 +199,39 @@ func (s *Server) GetUserOrders(ctx context.Context, req *pb.GetUserOrdersRequest
 }
 
 func (s *Server) productExists(ctx context.Context, productID string) (bool, error) {
-	collection := s.db.Database("db_ecommerce_mongo").Collection("products")
-	var product bson.M
-	err := collection.FindOne(ctx, bson.M{"id": productID}).Decode(&product)
+	collection := s.db.Database("db_products").Collection("products")
+	objID, err := primitive.ObjectIDFromHex(productID)
 	if err != nil {
+		// Jeśli konwersja się nie powiedzie, zwróć błąd
 		return false, err
 	}
-
-	quantity, ok := product["quantity"].(int64)
-	if !ok {
-		return false, errors.New("failed to parse quantity")
-	}
-	if quantity < 1 {
-		return false, errors.New("product quantity must be greater than 0")
-	}
-	var product2 bson.M
-	err = collection.FindOne(ctx, bson.M{"id": productID}).Decode(&product2)
+	var product bson.M
+	err = collection.FindOne(ctx, bson.M{"_id": objID}).Decode(&product)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return false, nil
 		}
 		return false, err
 	}
+
+	quantity, ok := product["stockquantity"].(int64)
+	if !ok {
+		return false, errors.New("failed to parse quantity")
+	}
+	if quantity < 1 {
+		return false, errors.New("product quantity must be greater than 0")
+	}
+
 	return true, nil
 }
 
 func (s *Server) userExist(ctx context.Context, userId string) (bool, error) {
-	collection := s.db.Database("db_ecommerce_mongo").Collection("products")
-	var product bson.M
-	err := collection.FindOne(ctx, bson.M{"id": userId}).Decode(&product)
+
+	query := "SELECT id FROM users WHERE id = $1"
+	var existingID string
+	err := s.sql.QueryRowContext(ctx, query, userId).Scan(&existingID)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if err == sql.ErrNoRows {
 			return false, nil
 		}
 		return false, err
@@ -231,9 +240,9 @@ func (s *Server) userExist(ctx context.Context, userId string) (bool, error) {
 }
 
 func (s *Server) decreaseProductQuantity(ctx context.Context, productID string) error {
-	collection := s.db.Database("db_ecommerce_mongo").Collection("products")
+	collection := s.db.Database("db_orders").Collection("products")
 
-	filter := bson.M{"id": productID}
+	filter := bson.M{"_id": productID}
 	update := bson.M{"$inc": bson.M{"quantity": -1}}
 
 	_, err := collection.UpdateOne(ctx, filter, update)
@@ -244,6 +253,6 @@ func (s *Server) decreaseProductQuantity(ctx context.Context, productID string) 
 	return nil
 }
 
-func NewServer(db *mongo.Client, logs logs.LoggingServiceClient) *Server {
-	return &Server{db: db, logs: logs}
+func NewServer(db *mongo.Client, logs logs.LoggingServiceClient, sql *sql.DB) *Server {
+	return &Server{db: db, logs: logs, sql: sql}
 }

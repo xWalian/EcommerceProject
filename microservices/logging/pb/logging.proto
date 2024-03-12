@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package logging;
 
-option go_package = "./logging";
+option go_package = "./";
 
 service LoggingService {
   rpc GetLogs(GetLogsRequest) returns (GetLogsResponse);

@@ -6,7 +6,7 @@ import (
 	_ "github.com/lib/pq"
 	pb "github.com/xWalian/EcommerceProject/microservices/auth/pb"
 	auth "github.com/xWalian/EcommerceProject/microservices/auth/server"
-	logs "github.com/xWalian/EcommerceProject/microservices/logging/server"
+	logs "github.com/xWalian/EcommerceProject/microservices/logging/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"log"
@@ -29,7 +29,7 @@ func main() {
 	}
 	fmt.Println("Connected to PostgreSQL database!")
 
-	// Creating gRPC listener
+	// Creating gRPC listenerer
 
 	lis, err := net.Listen("tcp", ":50052")
 	if err != nil {

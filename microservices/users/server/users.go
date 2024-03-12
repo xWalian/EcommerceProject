@@ -3,8 +3,8 @@ package users
 import (
 	"context"
 	"database/sql"
-	auth "github.com/xWalian/EcommerceProject/microservices/auth/server"
-	logs "github.com/xWalian/EcommerceProject/microservices/logs/server"
+	auth "github.com/xWalian/EcommerceProject/microservices/auth/pb"
+	logs "github.com/xWalian/EcommerceProject/microservices/logging/pb"
 	pb "github.com/xWalian/EcommerceProject/microservices/users/pb"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
@@ -123,6 +123,31 @@ func (s *Server) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.User,
 }
 
 func (s *Server) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
+	checkQuery := "SELECT id FROM users WHERE email = $1 OR username = $2"
+	var existingUserID int64
+	err := s.db.QueryRowContext(ctx, checkQuery, req.GetEmail(), req.GetUsername()).Scan(&existingUserID)
+	if err == nil {
+		s.logs.CreateLog(
+			ctx, &logs.CreateLogRequest{
+				Service:   "usersservice",
+				Level:     "WARNING",
+				Message:   "User with email or username already exists",
+				Timestamp: time.Now().Format("2006-01-02 15:04:05"),
+			},
+		)
+		return nil, status.Errorf(codes.AlreadyExists, "User with email or username already exists")
+	} else if err != sql.ErrNoRows {
+		s.logs.CreateLog(
+			ctx, &logs.CreateLogRequest{
+				Service:   "usersservice",
+				Level:     "ERROR",
+				Message:   err.Error(),
+				Timestamp: time.Now().Format("2006-01-02 15:04:05"),
+			},
+		)
+		return nil, err
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.GetPassword()), bcrypt.DefaultCost)
 	if err != nil {
 		s.logs.CreateLog(
@@ -136,10 +161,10 @@ func (s *Server) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Reg
 		return nil, status.Errorf(codes.Internal, "Failed to hash password: %v", err)
 	}
 
-	query := "INSERT INTO users (username, email, password, role, address, phone) VALUES ($1, $2, $3, $4, '', '') RETURNING id"
+	insertQuery := "INSERT INTO users (username, email, password, role, address, phone) VALUES ($1, $2, $3, $4, '', '') RETURNING id"
 	var userID int64
 	err = s.db.QueryRowContext(
-		ctx, query, req.GetUsername(), req.GetEmail(), string(hashedPassword), "user",
+		ctx, insertQuery, req.GetUsername(), req.GetEmail(), string(hashedPassword), "user",
 	).Scan(&userID)
 	if err != nil {
 		s.logs.CreateLog(
@@ -163,6 +188,7 @@ func (s *Server) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Reg
 	if err != nil {
 		return nil, err
 	}
+
 	_, err = s.logs.CreateLog(
 		ctx, &logs.CreateLogRequest{
 			Service:   "usersservice",
@@ -174,6 +200,7 @@ func (s *Server) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Reg
 	if err != nil {
 		return nil, err
 	}
+
 	return &pb.RegisterResponse{Token: token.Token, Refreshtoken: token.RefreshToken}, nil
 }
 

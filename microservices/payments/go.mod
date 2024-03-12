@@ -4,9 +4,9 @@ go 1.21.1
 
 require (
 	github.com/lib/pq v1.10.9
-	github.com/xWalian/EcommerceProject/microservices/logs v0.0.0-20240311091236-fe814ea3b89d
-	github.com/xWalian/EcommerceProject/microservices/orders v0.0.0-20240311091236-fe814ea3b89d
-	github.com/xWalian/EcommerceProject/microservices/products v0.0.0-20240311091236-fe814ea3b89d
+	github.com/xWalian/EcommerceProject/microservices/logging v0.0.0-20240312090536-cae9b7fe8bac
+	github.com/xWalian/EcommerceProject/microservices/orders v0.0.0-20240312090536-cae9b7fe8bac
+	github.com/xWalian/EcommerceProject/microservices/products v0.0.0-20240312090536-cae9b7fe8bac
 	go.mongodb.org/mongo-driver v1.14.0
 	google.golang.org/grpc v1.62.1
 	google.golang.org/protobuf v1.33.0
@@ -18,6 +18,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect
+	github.com/xWalian/EcommerceProject/microservices/logs v0.0.0-20240311091236-fe814ea3b89d // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
