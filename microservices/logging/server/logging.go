@@ -1,4 +1,4 @@
-package logs
+package logging
 
 import (
 	"context"
@@ -18,7 +18,7 @@ func (s *Server) mustEmbedUnimplementedLoggingServiceServer() {
 
 func (s *Server) GetLogs(ctx context.Context, req *logs.GetLogsRequest) (*logs.GetLogsResponse, error) {
 
-	query := "SELECT id, service, level, message, timestamp FROM logs WHERE 1=1"
+	query := "SELECT id, service, level, message, timestamp FROM logging WHERE 1=1"
 	args := make([]interface{}, 0)
 
 	if req.Service != "" {
@@ -54,7 +54,7 @@ func (s *Server) GetLogs(ctx context.Context, req *logs.GetLogsRequest) (*logs.G
 
 func (s *Server) CreateLog(ctx context.Context, request *logs.CreateLogRequest) (*logs.Log, error) {
 
-	query := "INSERT INTO logs (service, level, message, timestamp) VALUES ($1, $2, $3, $4) RETURNING id"
+	query := "INSERT INTO logging (service, level, message, timestamp) VALUES ($1, $2, $3, $4) RETURNING id"
 	var id int
 
 	err := s.db.QueryRowContext(
@@ -74,7 +74,7 @@ func (s *Server) CreateLog(ctx context.Context, request *logs.CreateLogRequest) 
 }
 
 func (s *Server) DeleteLog(ctx context.Context, req *logs.DeleteLogRequest) (*logs.DeleteLogResponse, error) {
-	query := "DELETE FROM logs WHERE id = $1"
+	query := "DELETE FROM logging WHERE id = $1"
 
 	result, err := s.db.ExecContext(ctx, query, req.Id)
 	if err != nil {

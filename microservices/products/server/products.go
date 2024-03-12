@@ -3,7 +3,6 @@ package products
 import (
 	"context"
 	"github.com/google/uuid"
-	logspb "github.com/xWalian/EcommerceProject/microservices/logs/pb"
 	logs "github.com/xWalian/EcommerceProject/microservices/logs/server"
 	pb "github.com/xWalian/EcommerceProject/microservices/products/pb"
 	"go.mongodb.org/mongo-driver/bson"
@@ -29,7 +28,7 @@ func (s *Server) GetProducts(ctx context.Context, req *pb.GetProductsRequest) (
 	cursor, err := collection.Find(ctx, bson.D{})
 	if err != nil {
 		_, err := s.logs.CreateLog(
-			ctx, &logspb.CreateLogRequest{
+			ctx, &logs.CreateLogRequest{
 				Service:   "productsservice",
 				Level:     "WARNING",
 				Message:   err.Error(),

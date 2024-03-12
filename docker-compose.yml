@@ -16,7 +16,7 @@ services:
       - microservices
 
   logs:
-    build: ./microservices/logs
+    build: microservices/logging
     ports:
       - "50054:50054"
     networks:

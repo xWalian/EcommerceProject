@@ -43,7 +43,7 @@ func main() {
 	defer authConn.Close()
 	logConn, err := grpc.Dial("172.17.0.1:50054", grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("failed to connect to auth service: %v", err)
+		log.Fatalf("failed to connect to log service: %v", err)
 	}
 	defer logConn.Close()
 	authClient := auth.NewAuthServiceClient(authConn)

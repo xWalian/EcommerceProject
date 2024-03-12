@@ -4,7 +4,7 @@
 // 	protoc        v3.21.12
 // source: payments.proto
 
-package __
+package payments
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"

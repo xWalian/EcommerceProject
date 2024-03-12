@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.33.0
 // 	protoc        v3.21.12
-// source: logs.proto
+// source: logging.proto
 
-package logs
+package logging
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -159,7 +159,7 @@ type GetLogsResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Logs []*Log `protobuf:"bytes,1,rep,name=logs,proto3" json:"logs,omitempty"`
+	Logs []*Log `protobuf:"bytes,1,rep,name=logging,proto3" json:"logging,omitempty"`
 }
 
 func (x *GetLogsResponse) Reset() {
@@ -427,21 +427,21 @@ func file_logs_proto_rawDescGZIP() []byte {
 
 var file_logs_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_logs_proto_goTypes = []interface{}{
-	(*Log)(nil),               // 0: logs.Log
-	(*GetLogsRequest)(nil),    // 1: logs.GetLogsRequest
-	(*GetLogsResponse)(nil),   // 2: logs.GetLogsResponse
-	(*CreateLogRequest)(nil),  // 3: logs.CreateLogRequest
-	(*DeleteLogRequest)(nil),  // 4: logs.DeleteLogRequest
-	(*DeleteLogResponse)(nil), // 5: logs.DeleteLogResponse
+	(*Log)(nil),               // 0: logging.Log
+	(*GetLogsRequest)(nil),    // 1: logging.GetLogsRequest
+	(*GetLogsResponse)(nil),   // 2: logging.GetLogsResponse
+	(*CreateLogRequest)(nil),  // 3: logging.CreateLogRequest
+	(*DeleteLogRequest)(nil),  // 4: logging.DeleteLogRequest
+	(*DeleteLogResponse)(nil), // 5: logging.DeleteLogResponse
 }
 var file_logs_proto_depIdxs = []int32{
-	0, // 0: logs.GetLogsResponse.logs:type_name -> logs.Log
-	1, // 1: logs.LoggingService.GetLogs:input_type -> logs.GetLogsRequest
-	3, // 2: logs.LoggingService.CreateLog:input_type -> logs.CreateLogRequest
-	4, // 3: logs.LoggingService.DeleteLog:input_type -> logs.DeleteLogRequest
-	2, // 4: logs.LoggingService.GetLogs:output_type -> logs.GetLogsResponse
-	0, // 5: logs.LoggingService.CreateLog:output_type -> logs.Log
-	5, // 6: logs.LoggingService.DeleteLog:output_type -> logs.DeleteLogResponse
+	0, // 0: logging.GetLogsResponse.logging:type_name -> logging.Log
+	1, // 1: logging.LoggingService.GetLogs:input_type -> logging.GetLogsRequest
+	3, // 2: logging.LoggingService.CreateLog:input_type -> logging.CreateLogRequest
+	4, // 3: logging.LoggingService.DeleteLog:input_type -> logging.DeleteLogRequest
+	2, // 4: logging.LoggingService.GetLogs:output_type -> logging.GetLogsResponse
+	0, // 5: logging.LoggingService.CreateLog:output_type -> logging.Log
+	5, // 6: logging.LoggingService.DeleteLog:output_type -> logging.DeleteLogResponse
 	4, // [4:7] is the sub-list for method output_type
 	1, // [1:4] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
