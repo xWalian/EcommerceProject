@@ -2,46 +2,62 @@ version: '3'
 
 services:
   auth:
-    image: auth:latest
+    build: ./microservices/auth
     ports:
       - "50052:50052"
     networks:
       - microservices
 
   users:
-    image: users:latest
+    build: ./microservices/users
     ports:
       - "50053:50053"
     networks:
       - microservices
 
   logs:
-    image: logs:latest
+    build: ./microservices/logs
     ports:
       - "50054:50054"
     networks:
       - microservices
 
   products:
-    image: products:latest
+    build: ./microservices/products
     ports:
       - "50055:50055"
     networks:
       - microservices
 
   orders:
-    image: orders:latest
+    build: ./microservices/orders
     ports:
       - "50056:50056"
     networks:
       - microservices
 
   payments:
-    image: payments:latest
+    build: ./microservices/payments
     ports:
       - "50057:50057"
     networks:
       - microservices
-
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongo_data:/data/db
+    networks:
+      - microservices
+  postgresql:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    networks:
+      - microservices
 networks:
   microservices:
+    driver: bridge

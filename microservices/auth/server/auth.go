@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
+	auth "github.com/xWalian/EcommerceProject/microservices/auth/pb"
 	logs "github.com/xWalian/EcommerceProject/microservices/logs/server"
-
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"time"
@@ -20,11 +20,12 @@ const (
 )
 
 type Server struct {
+	auth.UnimplementedAuthServiceServer
 	db   *sql.DB
 	logs logs.LoggingServiceClient
 }
 
-func (s *Server) VerifyToken(ctx context.Context, request *VerifyTokenRequest) (*VerifyTokenResponse, error) {
+func (s *Server) VerifyToken(ctx context.Context, request *auth.VerifyTokenRequest) (*auth.VerifyTokenResponse, error) {
 	claims, err := ValidateToken(ctx, request.Token)
 	if err != nil {
 		s.logs.CreateLog(
@@ -65,13 +66,15 @@ func (s *Server) VerifyToken(ctx context.Context, request *VerifyTokenRequest) (
 		return nil, err
 	}
 
-	return &VerifyTokenResponse{Valid: true}, nil
+	return &auth.VerifyTokenResponse{Valid: true}, nil
 }
 
 func (s *Server) mustEmbedUnimplementedAuthServiceServer() {
 }
 
-func (s *Server) GenerateToken(ctx context.Context, req *GenerateTokenRequest) (*GenerateTokenResponse, error) {
+func (s *Server) GenerateToken(ctx context.Context, req *auth.GenerateTokenRequest) (
+	*auth.GenerateTokenResponse, error,
+) {
 	accessTokenClaims := jwt.MapClaims{
 		"id":       req.GetId(),
 		"role":     req.Role,
@@ -95,7 +98,7 @@ func (s *Server) GenerateToken(ctx context.Context, req *GenerateTokenRequest) (
 		return nil, err
 	}
 
-	return &GenerateTokenResponse{
+	return &auth.GenerateTokenResponse{
 		Token:        accessTokenString,
 		RefreshToken: refreshTokenString,
 	}, nil
@@ -116,7 +119,9 @@ func ValidateToken(ctx context.Context, tokenString string) (jwt.MapClaims, erro
 
 	return nil, errors.New("invalid token")
 }
-func (s *Server) RefreshToken(ctx context.Context, request *RefreshTokenRequest) (*RefreshTokenResponse, error) {
+func (s *Server) RefreshToken(ctx context.Context, request *auth.RefreshTokenRequest) (
+	*auth.RefreshTokenResponse, error,
+) {
 	claims, err := ValidateToken(ctx, request.GetRefreshtoken())
 	if err != nil {
 		return nil, err
@@ -138,7 +143,7 @@ func (s *Server) RefreshToken(ctx context.Context, request *RefreshTokenRequest)
 	}
 	userID := int64(idFloat)
 	accessToken, _ := s.GenerateToken(
-		ctx, &GenerateTokenRequest{
+		ctx, &auth.GenerateTokenRequest{
 			Id:       userID,
 			Role:     userrole,
 			Username: username,
@@ -147,7 +152,7 @@ func (s *Server) RefreshToken(ctx context.Context, request *RefreshTokenRequest)
 	if err != nil {
 		return nil, err
 	}
-	return &RefreshTokenResponse{Token: accessToken.Token}, nil
+	return &auth.RefreshTokenResponse{Token: accessToken.Token}, nil
 }
 
 func NewServer(db *sql.DB, logs logs.LoggingServiceClient) *Server {

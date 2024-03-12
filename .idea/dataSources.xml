@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="mongoDB" uuid="7fc60610-aa7f-4584-bca3-0b85be8a4002">
+    <data-source source="LOCAL" name="@172.17.0.1" uuid="2cf712ba-83d3-4d5a-b4a8-9ca7904bb522">
       <driver-ref>mongo</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>com.dbschema.MongoJdbcDriver</jdbc-driver>
-      <jdbc-url>mongodb://localhost:27017/db_ecommerce_mongo</jdbc-url>
+      <jdbc-url>mongodb://172.17.0.1:27017</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
-    <data-source source="LOCAL" name="db_ecommerce_postgresql@localhost" uuid="4c84e340-f030-4772-aff2-f8ffb4e3e232">
+    <data-source source="LOCAL" name="postgres@172.17.0.1" uuid="0b341e37-b3bb-4e43-9ac8-82ef2d5833a5">
       <driver-ref>postgresql</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.postgresql.Driver</jdbc-driver>
-      <jdbc-url>jdbc:postgresql://localhost:5432/db_ecommerce_postgresql</jdbc-url>
+      <jdbc-url>jdbc:postgresql://172.17.0.1:5432/postgres</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
   </component>

@@ -1,4 +1,5 @@
-FROM golang:1.21
+FROM golang:1.21-alpine
 WORKDIR /app
 COPY . .
-CMD ["./main"]
+RUN go build -o products-server ./main.go
+CMD ["./products-server"]

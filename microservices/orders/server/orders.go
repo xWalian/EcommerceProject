@@ -4,7 +4,8 @@ import (
 	"context"
 	"errors"
 	"github.com/google/uuid"
-	"github.com/xWalian/EcommerceProject/microservices/logs/server"
+	logs "github.com/xWalian/EcommerceProject/microservices/logs/server"
+	pb "github.com/xWalian/EcommerceProject/microservices/orders/pb"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
@@ -13,6 +14,7 @@ import (
 )
 
 type Server struct {
+	pb.UnimplementedOrdersServiceServer
 	db   *mongo.Client
 	logs logs.LoggingServiceClient
 }
@@ -20,8 +22,8 @@ type Server struct {
 func (s *Server) mustEmbedUnimplementedOrdersServiceServer() {
 
 }
-func (s *Server) CreateOrder(ctx context.Context, req *CreateOrderRequest) (*Order, error) {
-	collection := s.db.Database("db_orders").Collection("orders")
+func (s *Server) CreateOrder(ctx context.Context, req *pb.CreateOrderRequest) (*pb.Order, error) {
+	collection := s.db.Database("db_orders").Collection("pb")
 	for _, productID := range req.GetProductIds() {
 		exists, err := s.productExists(ctx, productID)
 		if err != nil {
@@ -72,7 +74,7 @@ func (s *Server) CreateOrder(ctx context.Context, req *CreateOrderRequest) (*Ord
 	}
 
 	orderID := uuid.New().String()
-	order := &Order{
+	order := &pb.Order{
 		Id:         orderID,
 		UserId:     req.GetUserId(),
 		ProductsId: req.GetProductIds(),
@@ -113,9 +115,9 @@ func (s *Server) CreateOrder(ctx context.Context, req *CreateOrderRequest) (*Ord
 	)
 	return order, nil
 }
-func (s *Server) GetOrder(ctx context.Context, req *GetOrderRequest) (*Order, error) {
-	collection := s.db.Database("db_ecommerce_mongo").Collection("orders")
-	var order Order
+func (s *Server) GetOrder(ctx context.Context, req *pb.GetOrderRequest) (*pb.Order, error) {
+	collection := s.db.Database("db_ecommerce_mongo").Collection("pb")
+	var order pb.Order
 	err := collection.FindOne(ctx, bson.M{"id": req.Id}).Decode(&order)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -149,23 +151,25 @@ func (s *Server) GetOrder(ctx context.Context, req *GetOrderRequest) (*Order, er
 	)
 	return &order, nil
 }
-func (s *Server) GetUserOrders(ctx context.Context, req *GetUserOrdersRequest) (*GetUserOrdersResponse, error) {
-	collection := s.db.Database("db_ecommerce_mongo").Collection("orders")
+func (s *Server) GetUserOrders(ctx context.Context, req *pb.GetUserOrdersRequest) (
+	*pb.GetUserOrdersResponse, error,
+) {
+	collection := s.db.Database("db_ecommerce_mongo").Collection("pb")
 	cursor, err := collection.Find(ctx, bson.M{"userId": req.UserId})
 	if err != nil {
 		s.logs.CreateLog(
 			ctx, &logs.CreateLogRequest{
 				Service:   "ordersservice",
 				Level:     "WARNING",
-				Message:   req.UserId + "Failed to get user orders",
+				Message:   req.UserId + "Failed to get user pb",
 				Timestamp: time.Now().Format("2006-01-02 15:04:05"),
 			},
 		)
-		return nil, status.Errorf(codes.Internal, "failed to get user orders: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to get user pb: %v", err)
 	}
-	var orders []*Order
+	var orders []*pb.Order
 	for cursor.Next(ctx) {
-		var order Order
+		var order pb.Order
 		if err := cursor.Decode(&order); err != nil {
 			s.logs.CreateLog(
 				ctx, &logs.CreateLogRequest{
@@ -184,7 +188,7 @@ func (s *Server) GetUserOrders(ctx context.Context, req *GetUserOrdersRequest) (
 		return nil, status.Errorf(codes.Internal, "cursor error: %v", err)
 	}
 
-	return &GetUserOrdersResponse{Orders: orders}, nil
+	return &pb.GetUserOrdersResponse{Orders: orders}, nil
 }
 
 func (s *Server) productExists(ctx context.Context, productID string) (bool, error) {

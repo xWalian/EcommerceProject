@@ -5,6 +5,8 @@ import (
 	"fmt"
 	_ "github.com/lib/pq"
 	main2 "github.com/xWalian/EcommerceProject/microservices/logs/server"
+	pb "github.com/xWalian/EcommerceProject/microservices/products/pb"
+	products "github.com/xWalian/EcommerceProject/microservices/products/server"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
@@ -19,7 +21,7 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://172.17.0.1:27017"))
 	if err != nil {
 		log.Fatalf("failed to connect to MongoDB: %v", err)
 	}
@@ -43,15 +45,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	logConn, err := grpc.Dial("localhost:50054", grpc.WithInsecure())
+	logConn, err := grpc.Dial("172.17.0.1:50054", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("failed to connect to auth service: %v", err)
 	}
 	defer logConn.Close()
 	logClient := main2.NewLoggingServiceClient(logConn)
 	s := grpc.NewServer()
-	productsService := NewServer(client, logClient)
-	RegisterProductsServiceServer(s, productsService)
+	productsService := products.NewServer(client, logClient)
+	pb.RegisterProductsServiceServer(s, productsService)
 	reflection.Register(s)
 	log.Printf("Server started listening on %s", lis.Addr().String())
 

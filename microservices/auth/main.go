@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
+	pb "github.com/xWalian/EcommerceProject/microservices/auth/pb"
 	auth "github.com/xWalian/EcommerceProject/microservices/auth/server"
 	logs "github.com/xWalian/EcommerceProject/microservices/logs/server"
 	"google.golang.org/grpc"
@@ -13,7 +14,7 @@ import (
 )
 
 func main() {
-	connStr := "user=postgres dbname=db_users password=password host=localhost port=5432 sslmode=disable"
+	connStr := "user=postgres dbname=db_users password=password host=172.17.0.1 port=5432 sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
@@ -34,7 +35,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	logConn, err := grpc.Dial("localhost:50054", grpc.WithInsecure())
+	logConn, err := grpc.Dial("172.17.0.1:50054", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("failed to connect to auth service: %v", err)
 	}
@@ -42,7 +43,7 @@ func main() {
 	logClient := logs.NewLoggingServiceClient(logConn)
 	s := grpc.NewServer()
 	authService := auth.NewServer(db, logClient)
-	auth.RegisterAuthServiceServer(s, authService)
+	pb.RegisterAuthServiceServer(s, authService)
 	reflection.Register(s)
 	log.Printf("Server started listening on %s", lis.Addr().String())
 

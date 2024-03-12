@@ -4,9 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	logs "github.com/xWalian/EcommerceProject/microservices/logs/pb"
 )
 
 type Server struct {
+	logs.UnimplementedLoggingServiceServer
 	db *sql.DB
 }
 
@@ -14,7 +16,7 @@ func (s *Server) mustEmbedUnimplementedLoggingServiceServer() {
 
 }
 
-func (s *Server) GetLogs(ctx context.Context, req *GetLogsRequest) (*GetLogsResponse, error) {
+func (s *Server) GetLogs(ctx context.Context, req *logs.GetLogsRequest) (*logs.GetLogsResponse, error) {
 
 	query := "SELECT id, service, level, message, timestamp FROM logs WHERE 1=1"
 	args := make([]interface{}, 0)
@@ -34,23 +36,23 @@ func (s *Server) GetLogs(ctx context.Context, req *GetLogsRequest) (*GetLogsResp
 	}
 	defer rows.Close()
 
-	var logs []*Log
+	var logers []*logs.Log
 	for rows.Next() {
-		var log Log
+		var log logs.Log
 		err := rows.Scan(&log.Id, &log.Service, &log.Level, &log.Message, &log.Timestamp)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan row: %v", err)
 		}
-		logs = append(logs, &log)
+		logers = append(logers, &log)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating over rows: %v", err)
 	}
 
-	return &GetLogsResponse{Logs: logs}, nil
+	return &logs.GetLogsResponse{Logs: logers}, nil
 }
 
-func (s *Server) CreateLog(ctx context.Context, request *CreateLogRequest) (*Log, error) {
+func (s *Server) CreateLog(ctx context.Context, request *logs.CreateLogRequest) (*logs.Log, error) {
 
 	query := "INSERT INTO logs (service, level, message, timestamp) VALUES ($1, $2, $3, $4) RETURNING id"
 	var id int
@@ -62,7 +64,7 @@ func (s *Server) CreateLog(ctx context.Context, request *CreateLogRequest) (*Log
 		return nil, fmt.Errorf("failed to insert log: %v", err)
 	}
 
-	return &Log{
+	return &logs.Log{
 		Id:        string(rune(id)),
 		Service:   request.Service,
 		Level:     request.Level,
@@ -71,7 +73,7 @@ func (s *Server) CreateLog(ctx context.Context, request *CreateLogRequest) (*Log
 	}, nil
 }
 
-func (s *Server) DeleteLog(ctx context.Context, req *DeleteLogRequest) (*DeleteLogResponse, error) {
+func (s *Server) DeleteLog(ctx context.Context, req *logs.DeleteLogRequest) (*logs.DeleteLogResponse, error) {
 	query := "DELETE FROM logs WHERE id = $1"
 
 	result, err := s.db.ExecContext(ctx, query, req.Id)
@@ -88,7 +90,7 @@ func (s *Server) DeleteLog(ctx context.Context, req *DeleteLogRequest) (*DeleteL
 		return nil, fmt.Errorf("expected to delete 1 row, but deleted %d rows", numRows)
 	}
 
-	return &DeleteLogResponse{Success: true}, nil
+	return &logs.DeleteLogResponse{Success: true}, nil
 }
 
 func NewServer(db *sql.DB) *Server {

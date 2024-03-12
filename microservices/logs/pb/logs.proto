@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package logging;
+package logs;
 
-option go_package = "./logs";
+option go_package = "/";
 
 service LoggingService {
   rpc GetLogs(GetLogsRequest) returns (GetLogsResponse);

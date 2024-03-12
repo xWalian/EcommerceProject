@@ -3,7 +3,9 @@ package products
 import (
 	"context"
 	"github.com/google/uuid"
-	"github.com/xWalian/EcommerceProject/microservices/logs/server"
+	logspb "github.com/xWalian/EcommerceProject/microservices/logs/pb"
+	logs "github.com/xWalian/EcommerceProject/microservices/logs/server"
+	pb "github.com/xWalian/EcommerceProject/microservices/products/pb"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
@@ -12,6 +14,7 @@ import (
 )
 
 type Server struct {
+	pb.UnimplementedProductsServiceServer
 	db   *mongo.Client
 	logs logs.LoggingServiceClient
 }
@@ -19,12 +22,14 @@ type Server struct {
 func (s *Server) mustEmbedUnimplementedProductsServiceServer() {
 }
 
-func (s *Server) GetProducts(ctx context.Context, req *GetProductsRequest) (*GetProductsResponse, error) {
+func (s *Server) GetProducts(ctx context.Context, req *pb.GetProductsRequest) (
+	*pb.GetProductsResponse, error,
+) {
 	collection := s.db.Database("db_products").Collection("products")
 	cursor, err := collection.Find(ctx, bson.D{})
 	if err != nil {
 		_, err := s.logs.CreateLog(
-			ctx, &logs.CreateLogRequest{
+			ctx, &logspb.CreateLogRequest{
 				Service:   "productsservice",
 				Level:     "WARNING",
 				Message:   err.Error(),
@@ -37,9 +42,9 @@ func (s *Server) GetProducts(ctx context.Context, req *GetProductsRequest) (*Get
 		return nil, err
 	}
 	defer cursor.Close(ctx)
-	var products []*Product
+	var products []*pb.Product
 	for cursor.Next(ctx) {
-		var product Product
+		var product pb.Product
 		err := cursor.Decode(&product)
 		if err != nil {
 			s.logs.CreateLog(
@@ -73,12 +78,12 @@ func (s *Server) GetProducts(ctx context.Context, req *GetProductsRequest) (*Get
 			Timestamp: time.Now().Format("2006-01-02 15:04:05"),
 		},
 	)
-	return &GetProductsResponse{Products: products}, nil
+	return &pb.GetProductsResponse{Products: products}, nil
 }
 
-func (s *Server) GetProduct(ctx context.Context, req *GetProductRequest) (*Product, error) {
+func (s *Server) GetProduct(ctx context.Context, req *pb.GetProductRequest) (*pb.Product, error) {
 	collection := s.db.Database("db_ecommerce_mongo").Collection("products")
-	var product Product
+	var product pb.Product
 	err := collection.FindOne(ctx, bson.M{"id": req.Id}).Decode(&product)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -113,10 +118,10 @@ func (s *Server) GetProduct(ctx context.Context, req *GetProductRequest) (*Produ
 	return &product, nil
 }
 
-func (s *Server) AddProduct(ctx context.Context, req *AddProductRequest) (*Product, error) {
+func (s *Server) AddProduct(ctx context.Context, req *pb.AddProductRequest) (*pb.Product, error) {
 	collection := s.db.Database("db_ecommerce_mongo").Collection("products")
 	productID := uuid.New().String
-	product := &Product{
+	product := &pb.Product{
 		Id:            productID(),
 		Name:          req.GetName(),
 		Description:   req.GetDescription(),
@@ -149,7 +154,7 @@ func (s *Server) AddProduct(ctx context.Context, req *AddProductRequest) (*Produ
 	return product, nil
 }
 
-func (s *Server) UpdateProduct(ctx context.Context, req *UpdateProductRequest) (*Product, error) {
+func (s *Server) UpdateProduct(ctx context.Context, req *pb.UpdateProductRequest) (*pb.Product, error) {
 	collection := s.db.Database("db_ecommerce_mongo").Collection("products")
 	filter := bson.M{"id": req.GetId()}
 	update := bson.M{
@@ -167,7 +172,7 @@ func (s *Server) UpdateProduct(ctx context.Context, req *UpdateProductRequest) (
 	}
 
 	// Pobierz zaktualizowany produkt z bazy danych i zwróć go
-	var updatedProduct Product
+	var updatedProduct pb.Product
 	err = collection.FindOne(ctx, filter).Decode(&updatedProduct)
 	if err != nil {
 		return nil, err
@@ -183,7 +188,9 @@ func (s *Server) UpdateProduct(ctx context.Context, req *UpdateProductRequest) (
 	return &updatedProduct, nil
 }
 
-func (s *Server) DeleteProduct(ctx context.Context, req *DeleteProductRequest) (*DeleteProductResponse, error) {
+func (s *Server) DeleteProduct(
+	ctx context.Context, req *pb.DeleteProductRequest,
+) (*pb.DeleteProductResponse, error) {
 	collection := s.db.Database("db_ecommerce_mongo").Collection("products")
 	filter := bson.M{"id": req.GetId()}
 	result, err := collection.DeleteOne(ctx, filter)
@@ -191,7 +198,7 @@ func (s *Server) DeleteProduct(ctx context.Context, req *DeleteProductRequest) (
 		return nil, err
 	}
 	if result.DeletedCount == 0 {
-		return &DeleteProductResponse{Success: false}, status.Errorf(codes.NotFound, "Product not found")
+		return &pb.DeleteProductResponse{Success: false}, status.Errorf(codes.NotFound, "Product not found")
 	}
 	s.logs.CreateLog(
 		ctx, &logs.CreateLogRequest{
@@ -201,7 +208,7 @@ func (s *Server) DeleteProduct(ctx context.Context, req *DeleteProductRequest) (
 			Timestamp: time.Now().Format("2006-01-02 15:04:05"),
 		},
 	)
-	return &DeleteProductResponse{Success: true}, nil
+	return &pb.DeleteProductResponse{Success: true}, nil
 }
 
 func NewServer(db *mongo.Client, logs logs.LoggingServiceClient) *Server {

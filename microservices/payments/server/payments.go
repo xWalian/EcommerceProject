@@ -4,6 +4,7 @@ import (
 	"context"
 	logs "github.com/xWalian/EcommerceProject/microservices/logs/server"
 	orders "github.com/xWalian/EcommerceProject/microservices/orders/server"
+	pb "github.com/xWalian/EcommerceProject/microservices/payments/pb"
 	products "github.com/xWalian/EcommerceProject/microservices/products/server"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -12,6 +13,7 @@ import (
 )
 
 type Server struct {
+	pb.UnimplementedPaymentsServiceServer
 	db       *mongo.Client
 	logs     logs.LoggingServiceClient
 	products products.ProductsServiceClient
@@ -21,7 +23,9 @@ type Server struct {
 func (s *Server) mustEmbedUnimplementedPaymentsServiceServer() {
 }
 
-func (s *Server) ProcessPayment(ctx context.Context, req *ProcessPaymentRequest) (*PaymentResponse, error) {
+func (s *Server) ProcessPayment(ctx context.Context, req *pb.ProcessPaymentRequest) (
+	*pb.PaymentResponse, error,
+) {
 	sum, err := s.CheckPrice(ctx, req.OrderId)
 	if err != nil {
 		return nil, err
